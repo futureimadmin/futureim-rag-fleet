@@ -1,0 +1,23 @@
+{
+  "version": "encyclopaedia-1.0",
+  "taxonomy": "Fleet \u2192 Rack \u2192 Tier",
+  "reference_fleet_id": "bian",
+  "enterprise_fleet_id": "enterprise",
+  "unique_service_domains": 220,
+  "note": "Full tier/rack maps: run python scripts/build_bian_encyclopaedia.py; domain list in all_domain_titles.txt",
+  "tier_ids": [
+    "tier_party_reference",
+    "tier_customer_sales",
+    "tier_channels",
+    "tier_lending",
+    "tier_deposits_accounts",
+    "tier_payments",
+    "tier_cards",
+    "tier_investments",
+    "tier_trade",
+    "tier_risk_compliance",
+    "tier_corporate_ops",
+    "tier_product_ops",
+    "tier_insurance"
+  ]
+}

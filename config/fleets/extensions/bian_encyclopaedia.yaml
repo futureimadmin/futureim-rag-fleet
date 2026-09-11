@@ -1,0 +1,16 @@
+# BIAN encyclopaedia extension — Fleet → Rack → Tier
+# Full tier/rack map: python scripts/build_bian_encyclopaedia.py
+# Deep-merged into fleet_id=bian by src/fleet/registry.py
+fleets:
+  - fleet_id: bian
+    name: BIAN Reference Encyclopaedia
+    description: BIAN service-domain encyclopaedia for Agentic RAG dual-pull and codegen.
+    icon: "📚"
+    status: active
+    platform: bian
+    bian_version: "12"
+    is_reference: true
+    default_top_k: 12
+    documents_prefix: fleets/bian/
+    system_prompt_hint: >
+      Ground answers in BIAN encyclopaedia domain names and control-record operations.
