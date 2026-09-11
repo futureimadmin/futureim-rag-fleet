@@ -28,7 +28,6 @@ def get_registry(path: Optional[str] = None) -> FleetRegistry:
         logger.warning("Fleet registry not found at %s – empty registry", p)
         return FleetRegistry(fleets=[])
     data = _load_yaml(p)
-    # Optional extension files (banking_extensions.yaml and extensions/*.yaml)
     extra_paths = []
     be = p.parent / "banking_extensions.yaml"
     if be.exists():
@@ -42,20 +41,47 @@ def get_registry(path: Optional[str] = None) -> FleetRegistry:
         if extra_fleets:
             data.setdefault("fleets", []).extend(extra_fleets)
             logger.info("Merged %d fleets from %s", len(extra_fleets), ep)
-    fleets: List[Fleet] = []
-    seen_ids = set()
+
+    merged_raw: dict = {}
+    order: List[str] = []
     for raw in data.get("fleets", []):
-        fid = raw.get("fleet_id")
-        if fid in seen_ids:
-            logger.warning("Skipping duplicate fleet_id=%s", fid)
+        if not isinstance(raw, dict):
             continue
-        if fid:
-            seen_ids.add(fid)
-        racks = [Rack(**r) for r in raw.pop("racks", [])]
-        tiers = [Tier(**t) for t in raw.pop("tiers", [])]
+        fid = raw.get("fleet_id")
+        if not fid:
+            continue
+        if fid not in merged_raw:
+            merged_raw[fid] = dict(raw)
+            merged_raw[fid]["racks"] = list(raw.get("racks") or [])
+            merged_raw[fid]["tiers"] = list(raw.get("tiers") or [])
+            order.append(fid)
+        else:
+            existing = merged_raw[fid]
+            seen_r = {r.get("rack_id") for r in existing.get("racks") or [] if isinstance(r, dict)}
+            seen_t = {t.get("tier_id") for t in existing.get("tiers") or [] if isinstance(t, dict)}
+            for r in raw.get("racks") or []:
+                if isinstance(r, dict) and r.get("rack_id") not in seen_r:
+                    existing.setdefault("racks", []).append(r)
+                    seen_r.add(r.get("rack_id"))
+            for t in raw.get("tiers") or []:
+                if isinstance(t, dict) and t.get("tier_id") not in seen_t:
+                    existing.setdefault("tiers", []).append(t)
+                    seen_t.add(t.get("tier_id"))
+            logger.info("Deep-merged racks/tiers into fleet_id=%s from extension", fid)
+
+    fleets: List[Fleet] = []
+    for fid in order:
+        raw = merged_raw[fid]
+        racks = [Rack(**r) for r in raw.pop("racks", []) if isinstance(r, dict)]
+        tiers = [Tier(**t) for t in raw.pop("tiers", []) if isinstance(t, dict)]
         status = raw.pop("status", "active")
         fleets.append(
-            Fleet(racks=racks, tiers=tiers, status=FleetStatus(status), **raw)
+            Fleet(
+                racks=racks,
+                tiers=tiers,
+                status=FleetStatus(status),
+                **{k: v for k, v in raw.items() if k not in ("racks", "tiers")},
+            )
         )
     reg = FleetRegistry(
         fleets=fleets,
